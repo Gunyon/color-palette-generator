@@ -1,46 +1,99 @@
 <script>
-  import svelteLogo from './assets/svelte.svg'
-  import Counter from './lib/Counter.svelte'
+  import {
+    TonalPalette,
+    argbFromHex,
+    hexFromArgb
+  } from '@material/material-color-utilities';
+
+  let materialPalette = [];
+  let chromaPalette = [];
+
+  const handleChangeColor = event => {
+    const hexColor = event.target.value;
+    materialPalette = generateMaterialPalette(hexColor);
+    chromaPalette = generateChromaJsPalette(hexColor);
+  };
+
+  function generateMaterialPalette(hex) {
+    const argb = argbFromHex(hex);
+    const colors = [];
+    const tones = [95, 90, 80, 70, 60, 50, 40, 35, 30, 25, 20];
+    tones.forEach(t => {
+      const current = TonalPalette.fromInt(argb).tone(t);
+      const hex = hexFromArgb(current);
+      colors.push(hex);
+    });
+    // for (let i = 100; i >= 30; i = i - 7) {
+    //   const current = TonalPalette.fromInt(argb).tone(i);
+    //   const hex = hexFromArgb(current);
+    //   colors.push(hex);
+    // }
+    return addContrast(colors);
+  }
+
+  function generateChromaJsPalette(hex) {
+    const colorPalette = chroma
+      .scale([chroma(hex).darken(2), hex, '#fff'])
+      .mode('lch')
+      .colors(10);
+
+    return addContrast(colorPalette.reverse());
+  }
+
+  function addContrast(colors) {
+    return colors.map(c => {
+      const contrast = getContrastColor(c);
+      return { color: c, contrast };
+    });
+  }
+
+  function getContrastColor(hex) {
+    return chroma.contrast(hex, '#fff') > chroma.contrast(hex, '#000')
+      ? '#fff'
+      : '#000';
+  }
 </script>
 
 <main>
-  <div>
-    <a href="https://vitejs.dev" target="_blank" rel="noreferrer"> 
-      <img src="/vite.svg" class="logo" alt="Vite Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer"> 
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
+  <input type="color" on:change={handleChangeColor} />
+
+  <div class="row">
+    <div class="col">
+      <h2>Material palette</h2>
+      {#each materialPalette as color}
+        <div
+          class="color-item"
+          style="background-color: {color.color}; color: {color.contrast}"
+        >
+          {color.color}
+        </div>
+      {/each}
+    </div>
+    <div class="col">
+      <h2>Chroma palette</h2>
+      {#each chromaPalette as color}
+        <div
+          class="color-item"
+          style="background-color: {color.color}; color: {color.contrast}"
+        >
+          {color.color}
+        </div>
+      {/each}
+    </div>
   </div>
-  <h1>Vite + Svelte</h1>
-
-  <div class="card">
-    <Counter />
-  </div>
-
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-  </p>
-
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
 </main>
 
 <style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
+  main {
+    padding: 30px;
   }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
+
+  .color-item {
+    width: 300px;
+    padding: 10px;
   }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
-  .read-the-docs {
-    color: #888;
+
+  .row {
+    display: flex;
   }
 </style>
